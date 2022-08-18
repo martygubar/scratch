@@ -134,3 +134,56 @@ group by c.cust_id,
        s.short_name;
 
 -- 
+select count(*) from customer;
+select trunc(avg(views)) as avg_views,
+       min(views),
+       max(views),
+       median(views),
+       trunc(avg(recent_views)) as avg_recent_views,
+       min(recent_views),
+       max(recent_views)
+from (
+select 
+    last_name,
+    age,
+    work_experience,
+    yrs_current_employer,
+    yrs_residence,
+    rent_own,
+    insuff_funds_incidents,
+    views,
+    recent_views
+from cust_scratch
+where 
+    age between 30 and 42
+and work_experience > 7
+and yrs_current_employer < 4
+
+);
+
+
+
+select * from major_city; 
+
+create table major_city as
+select distinct(city) as city, loc_lat, loc_long 
+from customer
+where city in ('Omaha','Lima', 'Boston');
+
+select distinct c.last_name, c.city
+from customer c, major_city m
+where sdo_within_distance(
+ latlon_to_geometry(c.loc_lat, c.loc_long),
+ sdo_geometry(2001, 4326, sdo_point_type(m.loc_long, m.loc_lat, null),null, null),
+ 'distance=100 unit=mile') = 'TRUE';
+
+
+
+select * from major_city;
+insert into major_city values ('New York',40.73993,-73.76961);
+truncate table major_city;
+commit;
+
+select city, state_province, loc_long, loc_lat from customer where city in ('Hartford', 'New York');
+
+select * from MDSYS.SDO_DIST_UNITS where upper (UNIT_NAME) like '%MILE%';
