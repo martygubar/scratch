@@ -65,23 +65,8 @@ select *
 from custsales_original
 where movie_id in (select movie_id from movie);
 
--- Start tweaking data with following rules:
--- Story:
---Age range
---work_experience >> longer
---yrs_current_employer >> shorter
---yrs_residence >> lower
---rent_own --> renter
---Insufficient funds is higher
---Within x miles of major city
---
---x group slowed usage in October
---x group leave in November
---Y Start to slow down in nov, dec
 
 -- Create customer table with views and sales
-
--- Add spatial???
 drop table cust_scratch;
 create table cust_scratch as
 with base as (
@@ -107,48 +92,38 @@ with base as (
            c.yrs_current_employer,
            c.yrs_residence,
            s.short_name as customer_segment,       
-           count(*) as views,
-           sum(case when cs.day_id > to_date('2020-09', 'YYYY-MM') then 1 
+           1 as views,
+           case when cs.day_id > to_date('2020-09', 'YYYY-MM') then 1 
                 else null
-                end) as recent_views,
-           sum(case when genre_id in (1,2,6,20,22) then 1 
+                end as views_3_latest_months,  
+           case when cs.day_id < to_date('2020-10', 'YYYY-MM') then 1 
                 else null
-                end) as action_adventure,
-           sum(case when genre_id in (3,9,15) then 1 
+                end as views_pre_oct,                            
+           case when to_char(cs.day_id, 'YYYY-MM') = '2020-12' then 1 
                 else null
-                end) as family_friendly,
-           sum(case when genre_id in (6,7,13) then 1 
+                end as views_dec,  
+           case when to_char(cs.day_id, 'YYYY-MM') = '2020-11' then 1 
                 else null
-                end) as docu_crime,
-           sum(case when genre_id in (8,19) then 1 
+                end as views_nov,  
+           case when to_char(cs.day_id, 'YYYY-MM') = '2020-10' then 1 
                 else null
-                end) as drama_romance            
+                end as views_oct, 
+           case when genre_id in (1,2,6,20,22) then 1 
+                else null
+                end as action_adventure,
+           case when genre_id in (3,9,15) then 1 
+                else null
+                end as family_friendly,
+           case when genre_id in (6,7,13) then 1 
+                else null
+                end as docu_crime,
+           case when genre_id in (8,19) then 1 
+                else null
+                end as drama_romance            
     from customer c, custsales cs, customer_contact cc, customer_segment s
     where c.cust_id = cs.cust_id
     and c.cust_id = cc.cust_id
     and c.segment_id = s.segment_id
-    group by c.cust_id,
-           c.last_name,
-           c.first_name,
-           c.city,
-           c.state_province,
-           c.country,
-           c.loc_lat,
-           c.loc_long,
-           c.age,
-           c.education,
-           c.full_time,
-           c.gender,
-           c.household_size,
-           c.income,
-           c.insuff_funds_incidents,
-           c.job_type,
-           c.rent_own,
-           c.pet,
-           c.work_experience,
-           c.yrs_current_employer,
-           c.yrs_residence,
-           s.short_name
 )
 select
     cust_id,
@@ -173,8 +148,12 @@ select
     yrs_current_employer,
     yrs_residence,
     customer_segment,
-    views,
-    recent_views,
+    sum(views) as views,
+    sum(views_dec) as views_dec,
+    sum(views_nov) as views_nov,
+    sum(views_oct) as views_oct,
+    sum(views_3_latest_months) as views_3_latest_months,
+    round(sum(views_pre_oct)/21, 0) as views_pre_oct_avg,
     sum(action_adventure) as action_adventure,
     sum(family_friendly) as family_friendly,
     sum(docu_crime) as docu_crime,
@@ -203,56 +182,92 @@ group by
     work_experience,
     yrs_current_employer,
     yrs_residence,
-    customer_segment,
-    views,
-    recent_views
+    customer_segment
     ;
 
-
--- Take a look at the data
-select count(*),
-       trunc(avg(views)) as avg_views,
-       min(views),
-       max(views),
-       median(views),
-       trunc(avg(recent_views)) as avg_recent_views,
-       min(recent_views),
-       max(recent_views),
-       count(action_adventure),
-       trunc(avg(action_adventure)) as avg_action_adventure,       
-       count(family_friendly),
-       trunc(avg(family_friendly)) as avg_family_friendly,       
-       count(docu_crime),
-       trunc(avg(docu_crime)) as avg_docu_crime,       
-       count(family_friendly),       
-       trunc(avg(family_friendly)) as avg_action_adventure,       
-       count(drama_romance),
-       trunc(avg(drama_romance)) as avg_drama_romance
-from (
-select 
-    c.last_name,
-    c.age,
-    c.work_experience,
-    c.yrs_current_employer,
-    c.yrs_residence,
-    c.rent_own,
-    c.insuff_funds_incidents,
-    c.views,
-    c.recent_views,
-    c.action_adventure,
-    c.family_friendly,
-    c.docu_crime,
-    c.drama_romance
-from cust_scratch c
-where 
+-- Find churners
+drop table new_churner;
+create table new_churner as 
+WITH base as (
+SELECT
+    cust_id,
+    city,
+    state_province,
+    country,
+    loc_lat,
+    loc_long,
+    views,
+    views_dec,
+    views_nov,
+    views_oct,
+    views_3_latest_months,
+    views_pre_oct_avg,
+    action_adventure,
+    family_friendly,
+    docu_crime,
+    drama_romance
+FROM
+    cust_scratch c    
+WHERE
     c.age between 28 and 40
-and c.work_experience > 5
 and c.yrs_current_employer < 4
 and c.yrs_residence < 6
 and c.insuff_funds_incidents > 0
-and c.action_adventure > 25
+and c.action_adventure > 25)
+select *
+from base sample(50)
+;
 
+-- Who is not a churner? Create a view
+create or replace view not_churner as
+select cust_id,
+    city,
+    state_province,
+    country,
+    loc_lat,
+    loc_long,
+    views,
+    views_dec,
+    views_nov,
+    views_oct,
+    views_3_latest_months,
+    views_pre_oct_avg,
+    action_adventure,
+    family_friendly,
+    docu_crime,
+    drama_romance
+FROM
+    cust_scratch c    
+where c.cust_id not in (select n.cust_id from new_churner n);
+
+-- Add some churners based on their location compared to existing churners
+-- Need spatial indexes and metadata
+insert into user_sdo_geom_metadata values (
+ 'CUST_SCRATCH',
+ user||'.LATLON_TO_GEOMETRY(loc_lat,loc_long)',
+  sdo_dim_array(
+      sdo_dim_element('X', -180, 180, 0.05), --longitude bounds and tolerance in meters
+      sdo_dim_element('Y', -90, 90, 0.05)),  --latitude bounds and tolerance in meters
+  4326 --identifier for lat/lon coordinate system
+    );
+
+insert into user_sdo_geom_metadata values (
+ 'NEW_CHURNER',
+ user||'.LATLON_TO_GEOMETRY(loc_lat,loc_long)',
+  sdo_dim_array(
+      sdo_dim_element('X', -180, 180, 0.05), --longitude bounds and tolerance in meters
+      sdo_dim_element('Y', -90, 90, 0.05)),  --latitude bounds and tolerance in meters
+  4326 --identifier for lat/lon coordinate system
 );
+    
+commit;
+
+CREATE INDEX cust_scratch_sidx ON cust_scratch (latlon_to_geometry(loc_lat,loc_long)) INDEXTYPE IS mdsys.spatial_index_v2 PARAMETERS ('layer_gtype=POINT');
+CREATE INDEX new_churner_sidx ON new_churner (latlon_to_geometry(loc_lat,loc_long)) INDEXTYPE IS mdsys.spatial_index_v2 PARAMETERS ('layer_gtype=POINT');
+
+-- Let's now find customers that are near these churners
+
+
 
 -- For these customers
 -- Clear out their december views (shift back 2 months)
@@ -346,28 +361,3 @@ and sdo_within_distance(
 
 
 
-
-select * from major_city; 
-
-create table major_city as
-select distinct(city) as city, loc_lat, loc_long 
-from customer
-where city in ('Omaha','Lima', 'Boston');
-
-select distinct c.last_name, c.city
-from customer c, major_city m
-where sdo_within_distance(
- latlon_to_geometry(c.loc_lat, c.loc_long),
- sdo_geometry(2001, 4326, sdo_point_type(m.loc_long, m.loc_lat, null),null, null),
- 'distance=100 unit=mile') = 'TRUE';
-
-
-
-select * from major_city;
-insert into major_city values ('New York',40.73993,-73.76961);
-truncate table major_city;
-commit;
-
-select city, state_province, loc_long, loc_lat from customer where city in ('Hartford', 'New York');
-
-select * from MDSYS.SDO_DIST_UNITS where upper (UNIT_NAME) like '%MILE%';
