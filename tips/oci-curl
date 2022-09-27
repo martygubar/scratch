@@ -1,0 +1,22 @@
+#!/bin/bash
+# Copyright (c) 2016, 2020, Oracle and/or its affiliates.  All rights reserved.
+# This software is dual-licensed to you under the Universal Permissive License (UPL) 1.0 as shown at https://oss.oracle.com/licenses/upl or Apache License 2.0 as shown at http://www.apache.org/licenses/LICENSE-2.0. You may choose either license.
+
+set -e
+
+COMPARTMENT_ID=ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a
+
+if [[ -z "$COMPARTMENT_ID" ]];then
+    echo "COMPARTMENT_ID must be defined in the environment. "
+    exit 1
+fi
+
+TARGET_URI='https://usageapi.us-ashburn-1.oci.oraclecloud.com/20200107/usage'
+HTTP_METHOD='POST'
+PROFILE='DEFAULT'
+#REQUEST_BODY="{\"granularity\": \"MONTHLY\",\"groupBy\": [\"skuName\",\"region\",\"tenantName\",\"compartmentName\"],\"compartmentDepth\":4,\"queryType\": \"USAGE\",\"tenantId\": \"ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a\",\"timeUsageEnded\": \"2022-08-22\",\"timeUsageStarted\": \"2022-08-01\"}"
+#REQUEST_BODY="{\"tenantId\": \"ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a\", \"timeUsageStarted\": \"2022-08-21T00:00:00.000Z\", \"timeUsageEnded\": \"2022-08-22T00:00:00.000Z\", \"granularity\": \"MONTHLY\", \"queryType\": \"USAGE\", \"groupBy\": [\"skuName\", \"region\", \"tenantName\", \"compartmentName\"], \"compartmentDepth\": 4.0}"
+#REQUEST_BODY="{\"tenantId\": \"ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a\", \"timeUsageStarted\": \"2022-08-21\", \"timeUsageEnded\": \"2022-08-22\", \"granularity\": \"MONTHLY\", \"queryType\": \"USAGE\", \"groupBy\": [\"skuName\", \"region\", \"tenantName\", \"compartmentName\"], \"compartmentDepth\": 4.0}"
+REQUEST_BODY="{\"tenantId\": \"ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a\", \"timeUsageStarted\": \"2022-08-21\", \"timeUsageEnded\": \"2022-08-22\", \"granularity\": \"MONTHLY\", \"queryType\": \"USAGE\", \"groupBy\": [\"skuName\", \"region\", \"tenantName\", \"compartmentName\"], \"compartmentDepth\": 4.0, \"query\":\"data.items[*].{region:region}\"}"
+echo "oci raw-request --profile ${PROFILE} --target-uri ${TARGET_URI} --http-method ${HTTP_METHOD} --request-body ${REQUEST_BODY}"
+oci raw-request --profile ${PROFILE} --target-uri ${TARGET_URI} --http-method ${HTTP_METHOD} --request-body "${REQUEST_BODY}"

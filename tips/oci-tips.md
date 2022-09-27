@@ -17,6 +17,8 @@ get_usage=data.items[*].{"tenant-name":"tenant-name", "region":"region", "compar
 
 ```
 
+Endpoint: `https://usageapi.us-ashburn-1.oci.oraclecloud.com/20200107/usage`
+
 **Create an input file for the API parameters**
 
 File: usage.json
@@ -41,5 +43,24 @@ File: usage.json
 **Get the usage summary**
 
 ```bash
-oci usage-api usage-summary request-summarized-usages --from-json file:///home/martin_gub/usage.json --query query://get_usage --compartment-depth
+oci usage-api usage-summary request-summarized-usages --from-json file:///Users/mgubar/Code/scratch/scratch/tips/usage.json --query query://get_usage 
+```
+
+**Request Body**
+
+```json
+{
+  "granularity": "MONTHLY",
+  "groupBy": [
+    "skuName",
+    "region",
+    "tenantName",
+    "compartmentName"
+  ],
+  "compartmentDepth":4,
+  "queryType": "USAGE",
+  "tenantId": "ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a",
+  "timeUsageEnded": "2022-08-22",
+  "timeUsageStarted": "2022-08-01"
+}
 ```

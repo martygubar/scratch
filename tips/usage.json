@@ -1,0 +1,14 @@
+{
+    "granularity": "MONTHLY",
+    "groupBy": [
+      "skuName",
+      "region",
+      "tenantName",
+      "compartmentName"
+    ],
+    "compartmentDepth":4,
+    "queryType": "USAGE",
+    "tenantId": "ocid1.tenancy.oc1..aaaaaaaafcue47pqmrf4vigneebgbcmmoy5r7xvoypicjqqge32ewnrcyx2a",
+    "timeUsageEnded": "2022-08-21T00:00:00.000Z",
+    "timeUsageStarted": "2022-08-20T00:00:00.000Z"
+  }
