@@ -135,7 +135,7 @@ begin
     contains_clause := replace(contains_clause, 'genre_clause', nvl(movie_rec.genre, '""'));
     contains_clause := replace(contains_clause, 'cast_clause', nvl(movie_rec.cast, '""'));
     contains_clause := replace(contains_clause, 'crew_clause', nvl(movie_rec.crew,'""'));
-    --contains_clause := replace(contains_clause, 'title_clause', movie_rec.title);
+    contains_clause := replace(contains_clause, 'title_clause', movie_rec.title);
 
     -- Now that the query has been built, run it.
     -- Loop over the result and return one row at a time using "pipe"
@@ -167,7 +167,7 @@ end get_similar_movies;
 
 -- Try it using a title or a movie_id. Looks pretty good!
 select *
-from table(get_similar_movies(title => 'Frozen'));
+from table(get_similar_movies(title => 'Rocky IV'));
 
 select *
 from table(get_similar_movies(movie_id => 3244)); --> The Godfather
