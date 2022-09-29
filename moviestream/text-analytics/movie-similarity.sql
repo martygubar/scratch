@@ -2,14 +2,6 @@
 -- Setup
 --
 
--- This object will be used to return the similar movies.
-create or replace type obj_similar_movie as object (
-        score       number,
-        movie_id    number,
-        title       varchar2(4000)
-        );   
-/
-
 -- Start clean. Drop tables and indexes.
 drop table movie_similarity;
 
@@ -66,6 +58,18 @@ create index movie_text_index
   ')
 /
 
+-- This object will be used to return the similar movies from the function.
+-- Enables results to be embedded in table functions
+create or replace type obj_similar_movie as object (
+        score       number,
+        movie_id    number,
+        title       varchar2(4000)
+        );   
+/
+
+create or replace type t_similar_movie as table of obj_similar_movie;
+/
+
 -- This table function can be used to get the 10 similar movies
 create or replace function get_similar_movies (
     -- Pass a movie_id or title
@@ -111,8 +115,8 @@ begin
     contains_clause := '(year_clause) WITHIN year )*.2 
                           ACCUM (genre_clause) WITHIN genre  
                           ACCUM (cast_clause) WITHIN cast  
-                          ACCUM (crew_clause) WITHIN crew';
-                          --ACCUM (title_clause) WITHIN title';                                        
+                          ACCUM (crew_clause) WITHIN crew
+                          ACCUM (title_clause) WITHIN title';                                        
                                                         
     -- Let's weigh years. Movies that are closer in release date will have a higher score
     -- Years in general have a lower score compared to the other fields 
@@ -167,3 +171,4 @@ from table(get_similar_movies(title => 'Frozen'));
 
 select *
 from table(get_similar_movies(movie_id => 3244)); --> The Godfather
+
