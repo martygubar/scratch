@@ -137,24 +137,30 @@ begin
     start_time := sysdate;
         
     write('Begin',1);
+    write('processing day: ' || to_char(end_date, 'YYYY-MON-DD'), 2);
     
     -- Remove records that have a partial month
-    -- The last day for a month is the first day of the first month
+    -- The last day for a month is the first day of the following month
     -- i.e. month_end_date = 2022-09-01 will contain data for all of august    
     select count(*)
     into num_del_recs
     from oci_monthly_usage_raw
-    where to_char(month_end_date, 'YYYY-MM') = to_char(end_date-1, 'YYYY-MM')
-    and to_char(trunc(month_end_date), 'DD') != '01'; -- don't drop the first day of the month
+    where (to_char(month_end_date, 'YYYY-MM') = to_char(end_date-1, 'YYYY-MM')
+      and to_char(trunc(month_end_date), 'DD') != '01')  -- don't drop the first day of the month
+      or  to_char(month_end_date, 'YYYY-MON-DD') = to_char(end_date, 'YYYY-MON-DD'); --processing the same day again;
+    
     
     if num_del_recs > 0 then
-        write('deleting partial month for ' || to_char(end_date-1, 'YYYY-MM'), 2);
+        write('deleting rows for end date ' || to_char(end_date, 'YYYY-MM'), 2);
         
         delete oci_monthly_usage_raw
-        where to_char(month_end_date, 'YYYY-MM') = to_char(end_date-1, 'YYYY-MM');
+        where (to_char(month_end_date, 'YYYY-MM') = to_char(end_date-1, 'YYYY-MM')
+          and to_char(trunc(month_end_date), 'DD') != '01')
+          or  to_char(month_end_date, 'YYYY-MON-DD') = to_char(end_date, 'YYYY-MON-DD');
+        
         commit;
         
-        write('# rows deleted (1 per tenancy) : ' || SQL%ROWCOUNT);
+        write('# rows deleted : ' || num_del_recs, 3);
 
     end if;    
     
