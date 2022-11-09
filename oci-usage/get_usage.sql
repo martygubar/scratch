@@ -153,6 +153,12 @@ begin
     if num_del_recs > 0 then
         write('deleting rows for end date ' || to_char(end_date, 'YYYY-MM'), 2);
         
+        write('delete oci_monthly_usage_raw
+        where (to_char(month_end_date, ''YYYY-MM'') = ''' || to_char(end_date-1, 'YYYY-MM') || '''
+          and to_char(trunc(month_end_date), ''DD'') != ''01'')
+          or  to_char(month_end_date, ''YYYY-MON-DD'') = ''' || to_char(end_date, 'YYYY-MON-DD') || ''''        
+        );
+        
         delete oci_monthly_usage_raw
         where (to_char(month_end_date, 'YYYY-MM') = to_char(end_date-1, 'YYYY-MM')
           and to_char(trunc(month_end_date), 'DD') != '01')
