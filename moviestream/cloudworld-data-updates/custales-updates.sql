@@ -26,7 +26,7 @@ begin
 
     dbms_cloud.copy_collection (
         collection_name => 'MOVIE_COLLECTION',
-        file_uri_list   => 'https://objectstorage.sa-saopaulo-1.oraclecloud.com/n/adwc4pm/b/moviestream_gold/o/movie/movies.json',    
+        file_uri_list   => 'https://objectstorage.us-sanjose-1.oraclecloud.com/n/adwc4pm/b/moviestream_gold/o/movie/movies.json',    
         format          => '{ignoreblanklines:true}'
     );
 end;
@@ -77,8 +77,15 @@ with base as (
            c.state_province,
            c.country,
            c.loc_lat,
-           c.loc_long,
+           c.loc_long,  
            c.age,
+           case 
+            when c.age > 75 then 'Silent Generation'
+            when c.age between 57 and 75 then 'Boomer'
+            when c.age between 41 and 56 then 'Gen X'
+            when c.age between 25 and 40 then 'Millenials'
+            when c.age between 9 and 24 then 'Gen Z'
+            end as age_range,
            c.education,
            c.full_time,
            c.gender,
@@ -135,6 +142,7 @@ select
     loc_lat,
     loc_long,
     age,
+    age_range,
     education,
     full_time,
     gender,
@@ -170,6 +178,7 @@ group by
     loc_lat,
     loc_long,
     age,
+    age_range,
     education,
     full_time,
     gender,
